@@ -1,0 +1,121 @@
+SKULL - SIMPLIFIED RULESET FOR ML TRAINING
+==========================================
+
+PLAYERS: 2-6
+WIN CONDITION: Successfully complete 2 challenges (or be last player remaining)
+
+COMPONENTS PER PLAYER:
+- 4 discs: 3 flowers + 1 skull
+- 1 mat (tracks wins: skull-side up = 0 wins, flower-side up = 1 win)
+
+GAME STATE:
+- Each player has a hand of discs (starts at 4, decreases on penalties)
+- Each player has a mat stack (discs placed face-down, ordered)
+- Each player has a win count (0 or 1)
+- A current bid (integer, 0 = no bid yet)
+- Active players in current round (players who haven't passed)
+
+==========================================
+ROUND STRUCTURE
+==========================================
+
+PHASE 1 - PLACEMENT
+- Each player MUST place exactly 1 disc face-down on their mat.
+- Discs are stacked in order of placement (top = last placed).
+- Go clockwise starting from the first player.
+
+PHASE 2 - ADD OR BID
+- Starting from the first player, each player must do one of:
+  A) PLACE: Add 1 more disc face-down on top of their stack.
+  B) BID: Announce a number N (1 <= N <= total discs on all mats).
+     - This starts the bidding phase. Once bidding starts, no more placing.
+  - A player MUST bid (cannot place) if they have no discs left in hand.
+  - Minimum bid = 1. Cannot bid 0.
+
+PHASE 3 - BIDDING (after first bid is placed)
+- Clockwise from the player after the bidder, each active player must:
+  A) RAISE: Announce a number strictly greater than the current bid.
+  B) PASS: Slide mat forward; exit this round's bidding permanently.
+- Continue until all but one player has passed.
+- The last remaining bidder becomes the CHALLENGER with bid = N.
+
+PHASE 4 - CHALLENGE ATTEMPT
+- The Challenger must flip exactly N discs total without revealing any skull.
+- Rules for flipping:
+  1. Challenger MUST flip ALL of their own discs first (top to bottom).
+  2. After clearing their own stack, they choose any opponent's mat and
+     flip the top disc. Then choose again, and so on.
+  3. Discs are always flipped from the TOP of a stack.
+  4. Challenger does NOT need to exhaust any one stack before moving to another
+     (after flipping the top disc of a stack, they can switch to another).
+
+OUTCOME A - SKULL FLIPPED (failure):
+- Challenger immediately stops.
+- All players return all their discs to hand.
+- Challenger loses 1 disc permanently:
+    - Challenger shuffles their remaining discs face-down.
+    - The player whose skull was flipped picks 1 disc to remove (without looking).
+    - Exception: if Challenger flipped their OWN skull, Challenger picks which disc to lose.
+    - Removed disc is permanently out of game (contents unknown to all but Challenger).
+- If Challenger now has 0 discs: Challenger is ELIMINATED, returns mat.
+    - Next first player = the player whose skull was flipped
+      (or Challenger's choice if they flipped their own skull).
+- If Challenger still has discs: Challenger becomes first player of next round.
+
+OUTCOME B - N DISCS FLIPPED, NO SKULL (success):
+- Challenger flips their mat to flower-side up (if not already).
+- If mat was ALREADY flower-side up: Challenger WINS THE GAME immediately.
+- Challenger becomes first player of next round.
+
+SPECIAL CASE - 1 DISC REMAINING:
+- Player places their only disc in Phase 1 as normal.
+- In Phase 2 (adding): they must bid instead of placing.
+- In Phase 3 (bidding): they can raise or pass normally.
+- In Phase 4 (attempt): if their disc is flipped and it's a skull,
+  that player is immediately ELIMINATED.
+
+==========================================
+ELIMINATION
+==========================================
+- A player is eliminated when they lose their last disc.
+- Eliminated player removes their mat from the game.
+- If only 1 player remains (all others eliminated): that player wins.
+
+==========================================
+INFORMATION AVAILABLE TO EACH AGENT
+==========================================
+PUBLIC (observable by all):
+- Number of discs in each player's hand
+- Number of discs in each player's mat stack
+- Order of face-up (already flipped) discs on each mat
+- Number of wins per player (mat orientation)
+- Current bid
+- Who has passed this round
+- Total discs on table
+
+PRIVATE (known only to that player):
+- Contents of their own hand
+- Contents of their own mat stack (which disc is at which position)
+
+HIDDEN (unknown to all until revealed):
+- Contents of opponent mat stacks
+- Identity of eliminated discs
+
+==========================================
+ACTION SPACE SUMMARY
+==========================================
+In Phase 1:     PLACE(disc)          -- disc in {flower, skull}
+In Phase 2:     PLACE(disc) or BID(n)
+In Phase 3:     RAISE(n) or PASS
+In Phase 4:     FLIP(player_id)      -- flip top disc of chosen player's stack
+                                        (self must be fully cleared first)
+
+==========================================
+REWARD SIGNAL SUGGESTIONS
+==========================================
+- Win game:             +1.0
+- Succeed at challenge: +0.3
+- Fail challenge:       -0.3
+- Lose a disc:          -0.1
+- Eliminate opponent:   +0.2
+- Be eliminated:        -1.0

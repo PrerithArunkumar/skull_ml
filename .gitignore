@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env-py/
+
+# RLlib / Ray training artifacts
+ray_results/
+checkpoints/
+*.ckpt
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local Claude settings
+.claude/
